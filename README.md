@@ -1,1 +1,1 @@
-This is a Triple-M training and visualization model, containing datasets with varying training sizes. It can be run automatically using a Python script. The index file is used to exclude anomalies from the normal data.
+This is a Triple-M training and visualization model, containing datasets with varying training sizes. It can be run automatically using a Python script. 
