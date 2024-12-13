@@ -32,10 +32,6 @@ def load_online_data():
     file_path = 'test_dataset/test_normal.pt'
     data_n = torch.load(file_path)
 
-    # 精选的数据
-    idd = np.load('test_dataset/index.npy')
-    data_n = data_n[idd]
-    data_ab = data_ab[:700]
     return data_n, data_ab
 
 
