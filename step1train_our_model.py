@@ -121,23 +121,28 @@ class STtrans_C_FNN(nn.Module):
         return memory_out, x_re, text_out
 
 def train_clip(image, text_features, y):
-    # 升维到对应空间
+    # 假设 image_features 和 text_features 都是已经处理过的特征，image 即为 image_features
     image_features = image
 
-    logits = (text_features @ image_features.T)
+    # 归一化 text_features 和 image_features（按行归一化）
+    text_features_normalized = text_features / text_features.norm(dim=-1, keepdim=True)
+    image_features_normalized = image_features / image_features.norm(dim=-1, keepdim=True)
 
+    # 计算余弦相似度
+    logits = text_features_normalized @ image_features_normalized.T  # 点积得到相似度
 
     # 目标标签
     unique_y, inverse_indices = torch.unique(y, return_inverse=True)
-    labels_cilp = torch.zeros(logits.shape)
+    labels_clip = torch.zeros(logits.shape)
+
     for y_label in unique_y:
         mask = (y == y_label)
         target_y = torch.zeros(y.shape)
         target_y[mask] = 1
-        labels_cilp[y == y_label] = target_y
+        labels_clip[y == y_label] = target_y
 
-    logits = torch.softmax(logits, dim=-1)
-    target1 = torch.softmax(labels_cilp, dim=-1)
+    logits = torch.softmax(logits, dim=-1)  # softmax 激活
+    target1 = torch.softmax(labels_clip, dim=-1)  # softmax 激活目标标签
 
     return criteria1(logits, target1), logits, target1
 
@@ -180,7 +185,7 @@ if __name__ == '__main__':
     loaded_data = data_used(percent)
     # 超参数
     input_dim = 13
-    num_epochs = 90
+    num_epochs = 300
     batch_size = 64
     zero_dim = torch.zeros(batch_size, 1, input_dim) + 2
     learning_rate = 3e-4
