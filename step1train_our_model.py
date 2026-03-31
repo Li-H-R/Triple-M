@@ -118,6 +118,7 @@ class STtrans_C_FNN(nn.Module):
             text_out = self.re_linear(k_i)
         else:
             text_out = None  # or provide a default value if needed
+        memory_out = F.normalize(memory_out, p=2, dim=-1)
         return memory_out, x_re, text_out
 
 def train_clip(image, text_features, y):
