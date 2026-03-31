@@ -1,0 +1,146 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+import random
+import os
+
+
+def data_used():
+    """加载训练数据"""
+    data_set = torch.load(r'..\..\train_data\KIL_DataSet.pt')  # 按你的路径调整
+    return data_set
+
+
+class LSTM_C_LSTM(nn.Module):
+    def __init__(self, input_dim=13, hidden_dim=128, num_layers=3):
+        super(LSTM_C_LSTM, self).__init__()
+        # 编码器
+        self.encoder_lstm = nn.LSTM(
+            input_size=input_dim,
+            hidden_size=hidden_dim,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=0.1 if num_layers > 1 else 0
+        )
+        # 解码器
+        self.decoder_lstm = nn.LSTM(
+            input_size=hidden_dim,
+            hidden_size=hidden_dim,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=0.1 if num_layers > 1 else 0
+        )
+        self.re_linear = nn.Linear(6 * 6, hidden_dim)
+        self.output_layer = nn.Linear(hidden_dim, input_dim)
+
+    def forward(self, src, k_i):
+        encoder_output, (hidden, cell) = self.encoder_lstm(src)
+        last_encoder_output = encoder_output[:, -1, :]
+        batch_size, seq_len, _ = src.size()
+
+        decoder_input = last_encoder_output.unsqueeze(1)
+        decoder_hidden, decoder_cell = hidden, cell
+        outputs = []
+
+        for _ in range(seq_len):
+            decoder_output, (decoder_hidden, decoder_cell) = self.decoder_lstm(
+                decoder_input, (decoder_hidden, decoder_cell)
+            )
+            output = self.output_layer(decoder_output[:, -1, :])
+            outputs.append(output.unsqueeze(1))
+            decoder_input = decoder_output[:, -1, :].unsqueeze(1)
+
+        x_re = torch.cat(outputs, dim=1)
+        text_out = self.re_linear(k_i.view(k_i.size(0), -1))
+        last_encoder_output = F.normalize(last_encoder_output, p=2, dim=-1)
+        return last_encoder_output, x_re, text_out
+
+
+def train_clip(image_features, text_features, y):
+    logits = text_features @ image_features.t()
+    y_flat = y.view(-1)
+    target = (y_flat.unsqueeze(1) == y_flat.unsqueeze(0)).float().to(image_features.device)
+    logits_sm = torch.softmax(logits, dim=-1)
+    target_sm = torch.softmax(target, dim=-1)
+    return F.mse_loss(logits_sm, target_sm, reduction='sum')
+
+
+class My_UW_Loss(nn.Module):
+    def __init__(self):
+        super(My_UW_Loss, self).__init__()
+        self.log_var1 = nn.Parameter(torch.zeros(1))
+        self.log_var2 = nn.Parameter(torch.zeros(1))
+
+    def forward(self, losses):
+        l1, l2 = losses
+        loss1 = 0.5 * torch.exp(-self.log_var1) * l1 + 0.5 * self.log_var1
+        loss2 = 0.5 * torch.exp(-self.log_var2) * l2 + 0.5 * self.log_var2
+        return loss1 + loss2
+
+
+def train_model_with_seed(seed_n, device):
+    print(f'开始训练种子 {seed_n} 的模型...')
+    # 固定随机种子
+    random.seed(seed_n)
+    np.random.seed(seed_n)
+    torch.manual_seed(seed_n)
+    torch.cuda.manual_seed(seed_n)
+    torch.cuda.manual_seed_all(seed_n)
+    os.environ['PYTHONHASHSEED'] = str(seed_n)
+
+    loaded_data = data_used()
+
+    input_dim = 13
+    num_epochs = 100
+    learning_rate = 3e-4
+
+    model = LSTM_C_LSTM(input_dim=input_dim, hidden_dim=128, num_layers=3).to(device)
+    loss_function = My_UW_Loss().to(device)
+    optimizer_model = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer_loss = torch.optim.Adam(loss_function.parameters(), lr=learning_rate)
+    criteria_re = nn.MSELoss()
+
+    for epoch in range(num_epochs):
+        total_loss, total_re, total_clip = 0, 0, 0
+
+        for batch in loaded_data:
+            inputs, y_label, targets, know_inputs = batch
+            inputs = inputs.float().to(device)
+            y_label = y_label.to(device)
+            targets = targets.float().to(device)
+            know_inputs = know_inputs.float().to(device)
+
+            optimizer_model.zero_grad()
+            optimizer_loss.zero_grad()
+
+            m_out, outs, re_o = model(inputs, know_inputs)
+            loss_clip = train_clip(m_out, re_o, y_label)
+            loss_re = criteria_re(outs.view(-1), targets.view(-1))
+            loss = loss_function([loss_clip, loss_re])
+
+            loss.backward()
+            optimizer_model.step()
+            optimizer_loss.step()
+
+            total_loss += loss.item()
+            total_re += loss_re.item()
+            total_clip += loss_clip.item()
+
+        if (epoch + 1) % 20 == 0:
+            print(f'Epoch [{epoch+1}/{num_epochs}] Total: {total_loss:.4f}  Recon: {total_re:.4f}  Clip: {total_clip:.4f}')
+
+    torch.save(model.state_dict(), f'Model_parameters/model_seed_{seed_n}.pth')
+    print(f'种子 {seed_n} 训练完成，模型已保存')
+
+
+if __name__ == '__main__':
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f'使用设备: {device}')
+    os.makedirs('Model_parameters', exist_ok=True)
+
+    seeds = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    for seed in seeds:
+        train_model_with_seed(seed, device)
+
+    print("=== 所有模型训练完成 ===")
