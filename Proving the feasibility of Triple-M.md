@@ -1,6 +1,3 @@
-可以。为了保证 GitHub README 中公式稳定渲染，建议使用 **GitHub 原生支持的 LaTeX 数学语法**：行内公式用 `$...$`，独立公式用 `$$...$$`。同时我会修正原文中几个容易导致数学逻辑或 Markdown 渲染问题的地方，例如 `\appendices`、`\mathfrak`、矩阵范数以及公式环境嵌套问题。
-
-```markdown
 ## Theoretic Motivation
 
 Let the input $\boldsymbol{X}$ contain two underlying generative factors:
@@ -650,4 +647,3 @@ The above analysis establishes two complementary properties of the semantic cont
    Therefore, the theoretical guarantee degrades continuously with the semantic approximation error.
 
 Overall, the theory supports the interpretation that the proposed semantic contrastive learning mechanism encourages $\boldsymbol{z}$ to **retain turbine-operational semantics while suppressing irrelevant sensor-level details and noise**.
-```
