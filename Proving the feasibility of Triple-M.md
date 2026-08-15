@@ -1,649 +1,134 @@
-## Theoretic Motivation
+# Theoretical Motivation and Proofs
+
+## Theoretical Motivation
 
 Let the input $\boldsymbol{X}$ contain two underlying generative factors:
+* **Semantic factor ($\mathfrak{s} \in \mathcal{S}$):** Reflects turbine operation (e.g., operating mode).
+* **Detail factor ($\mathfrak{g} \in \mathcal{G}$):** Represents sensor-level variations or noise.
 
-- a **semantic factor** reflecting the turbine operation, denoted by $\mathfrak{s}\in\mathcal{S}$ (e.g., operating mode); and
-- a **detail factor** denoted by $\mathfrak{g}\in\mathcal{G}$ (e.g., sensor-level variations or noise).
+Let the encoder produce a normalized latent representation $\boldsymbol{z}$. 
 
-Let the encoder produce a normalized latent representation $\boldsymbol{z}$. The semantic mutual information is defined as
+### Mutual Information Definitions
 
-$$
-I(\boldsymbol{z};\mathfrak{s})
-=
-\mathbb{E}_{p(\boldsymbol{z},\mathfrak{s})}
-\left[
-\log
-\frac{p(\boldsymbol{z},\mathfrak{s})}
-{p(\boldsymbol{z})p(\mathfrak{s})}
-\right],
-$$
+1. **Semantic Mutual Information:** Measures how much semantic content $\boldsymbol{z}$ retains:
+   $$I(\boldsymbol{z}; \mathfrak{s}) = \mathbb{E}_{p(\boldsymbol{z},\mathfrak{s})} \left[ \log \frac{p(\boldsymbol{z},\mathfrak{s})}{p(\boldsymbol{z})p(\mathfrak{s})} \right]$$
 
-which measures how much semantic content is retained by $\boldsymbol{z}$.
+2. **Conditional Mutual Information:** Measures the amount of detail information contained in $\boldsymbol{z}$ after accounting for $\mathfrak{s}$:
+   $$I(\boldsymbol{z}; \mathfrak{g}\mid \mathfrak{s})$$
 
-Similarly, the conditional mutual information
-
-$$
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s})
-$$
-
-measures the amount of detail information contained in $\boldsymbol{z}$ after accounting for the semantic factor $\mathfrak{s}$.
-
-Therefore, a desirable encoder should maximize
-
-$$
-I(\boldsymbol{z};\mathfrak{s})
-$$
-
-while minimizing
-
-$$
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}),
-$$
-
-thereby alleviating semantic leakage (SL).
+A desirable encoder should maximize $I(\boldsymbol{z};\mathfrak{s})$ and minimize $I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s})$ to alleviate representation collapse / spurious learning.
 
 ---
 
-### Theorem 1: Semantic Enhancement and Detail Suppression
+### Theorem 1 (Semantic Enhancement and Detail Suppression)
 
-Let $\boldsymbol{z}\in\mathbb{R}^{d}$ denote the normalized representation produced by the encoder, satisfying
+> **Theorem 1.** Let $\boldsymbol{z} \in \mathbb{R}^d$ denote the normalized representation produced by the encoder, i.e., $\|\boldsymbol{z}\|_2 = 1$, and consider a contrastive learning framework with $N$ anchor samples.
+>
+> Then the conditional mutual information between $\boldsymbol{z}$ and the detail factor $\mathfrak{g}$ satisfies:
+>
+> $$I(\boldsymbol{z};\mathfrak{g}\mid \mathfrak{s}) \le C - \log N + \mathcal{L}_{\mathrm{NCE}_\mathfrak{s}}$$
+>
+> and
+>
+> $$I(\boldsymbol{z};\mathfrak{s}) \ge \log N - \mathcal{L}_{\mathrm{NCE}_\mathfrak{s}}$$
+>
+> where $\mathcal{L}_{\mathrm{NCE}_\mathfrak{s}}$ is an InfoNCE-type contrastive loss induced by a mode-matching mechanism under ideal wind turbine semantics ($i' \in \{1, \dots, N\}$):
+>
+> $$\mathcal{L}_{\mathrm{NCE}_\mathfrak{s}} = -\mathbb{E}_i \left[ \log \frac{\exp(\mathrm{sim}(\mathfrak{s}_{i'},\boldsymbol{z}_i))}{\sum_{j=1}^{N}\exp(\mathrm{sim}(\mathfrak{s}_j,\boldsymbol{z}_i))} \right]$$
+>
+> and the normalization constant $C$ is given by:
+>
+> $$C = \log \frac{2\pi^{d/2}}{\Gamma(d/2)}$$
+>
+> with $\Gamma(\cdot)$ denoting the Gamma function.
 
-$$
-\|\boldsymbol{z}\|_2=1.
-$$
+*(The proof is provided in Appendix I below.)*
 
-Consider a contrastive learning framework with $N$ anchor samples. Then, the conditional mutual information between $\boldsymbol{z}$ and the detail factor $\mathfrak{g}$ satisfies
+Furthermore, if the learned semantic representation $s$ satisfies $\| s - \mathfrak{s} \|_{2} \le \varepsilon$ for a sufficiently small $\varepsilon > 0$, then there exists a constant $K > 0$ such that:
 
-$$
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s})
-\le
-C-\log N+\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}},
-$$
+$$\|\mathcal{L}_{\mathrm{NCE}_s} - \mathcal{L}_{\mathrm{NCE}_\mathfrak{s}}\|_2 \le K \| s - \mathfrak{s} \|_2$$
 
 and
 
-$$
-I(\boldsymbol{z};\mathfrak{s})
-\ge
-\log N-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}},
-$$
+$$I(\boldsymbol{z};\mathfrak{g}\mid \mathfrak{s}) \le C - \log N + \mathcal{L}_{\mathrm{NCE}_s} \pm K\| s - \mathfrak{s} \|_{2}$$
 
-where
-
-$$
-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}
-=
--\mathbb{E}_{i}
-\left[
-\log
-\frac{
-\exp\left(\operatorname{sim}(\mathfrak{s}_{i'},\boldsymbol{z}_{i})\right)
-}{
-\sum_{j=1}^{N}
-\exp\left(\operatorname{sim}(\mathfrak{s}_{j},\boldsymbol{z}_{i})\right)
-}
-\right],
-\qquad
-i'=1,\ldots,N,
-$$
-
-is an InfoNCE-type contrastive loss induced by the mode-matching mechanism under ideal wind-turbine semantics.
-
-The constant $C$ is determined by the surface area of the unit hypersphere in $\mathbb{R}^{d}$:
-
-$$
-C
-=
-\log
-\frac{2\pi^{d/2}}
-{\Gamma(d/2)},
-$$
-
-where $\Gamma(\cdot)$ denotes the Gamma function.
-
-The detailed proof is provided in **Appendix I**.
+Thus, minimizing the loss $\mathcal{L}_{\mathrm{NCE}_s}$ associated with the true semantics $\mathfrak{s}$ increases the mutual information $I(\boldsymbol{z};\mathfrak{s})$ and tightens the upper bound of $I(\boldsymbol{z};\mathfrak{g} \mid \mathfrak{s})$, ensuring that the representation $\boldsymbol{z}$ increasingly reflects semantic structure.
 
 ---
 
-Furthermore, suppose that the learned semantic representation $s$ satisfies
+## Appendix I: Proof of Theorem 1
 
-$$
-\|s-\mathfrak{s}\|_2\le\varepsilon,
-$$
+1. **InfoNCE Lower Bound:**  
+   According to the InfoNCE bound, the mutual information between $\boldsymbol{z}$ and the semantic factor $\mathfrak{s}_{i}$ satisfies:
+   $$I(\boldsymbol{z};\mathfrak{s}_{i}) \ge \log N - \mathcal{L}_{\mathrm{NCE}_{{\mathfrak{s}}_{i}}}$$
 
-for a sufficiently small $\varepsilon>0$. Then, there exists a constant $K>0$ such that
+2. **Chain Rule of Mutual Information:**  
+   $$I(\boldsymbol{z}; (\mathfrak{s_i},\mathfrak{g})) = I(\boldsymbol{z}; \boldsymbol{X}) = I(\boldsymbol{z}; \mathfrak{s_i}) + I(\boldsymbol{z}; \mathfrak{g}\mid \mathfrak{s_i})$$
 
-$$
-\left\|
-\mathcal{L}_{\mathrm{NCE}_{s}}
--
-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}
-\right\|_2
-\le
-K\|s-\mathfrak{s}\|_2.
-$$
+3. **Bounding Detail Mutual Information:**  
+   Since $I(\boldsymbol{z};\boldsymbol{X}) \le H(\boldsymbol{z})$, we obtain:
+   $$I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}_i) \le H(\boldsymbol{z}) - I(\boldsymbol{z};\mathfrak{s}_i)$$
 
-Consequently,
+4. **Substituting the InfoNCE Bound:**  
+   $$I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}_i) \le H(\boldsymbol{z}) - \log N + \mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}_i}}$$
 
-$$
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s})
-\le
-C-\log N
-+
-\mathcal{L}_{\mathrm{NCE}_{s}}
-+
-K\|s-\mathfrak{s}\|_2.
-$$
+5. **Spherical Entropy Bound:**  
+   Since $\|\boldsymbol{z}\|_2 = 1$, $\boldsymbol{z}$ lies on the unit hypersphere in $\mathbb{R}^d$. Its differential entropy is bounded by the uniform distribution on the sphere:
+   $$H(\boldsymbol{z}) \le \log \frac{2\pi^{d/2}}{\Gamma(d/2)} = C$$
 
-Thus, when $s$ provides a sufficiently accurate approximation of the true semantic factor $\mathfrak{s}$, minimizing $\mathcal{L}_{\mathrm{NCE}_{s}}$ increases the mutual information
+6. **Conclusion:**  
+   Combining the bounds yields:
+   $$I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}_i) \le C - \log N + \mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}_i}}$$
 
-$$
-I(\boldsymbol{z};\mathfrak{s})
-$$
+   Since each $\mathfrak{s}_i$ represents semantic information within the wind turbine semantic space, aggregating across samples gives:
+   $$I(\boldsymbol{z};\mathfrak{g}\mid \mathfrak{s}) \le C - \log N + \mathcal{L}_{\mathrm{NCE}_\mathfrak{s}}$$
 
-while simultaneously tightening the upper bound on
-
-$$
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}).
-$$
-
-This provides a theoretical justification that the proposed semantic contrastive objective encourages the learned representation $\boldsymbol{z}$ to preserve semantic structure while suppressing irrelevant detail information.
+   Similarly, the lower bound $I(\boldsymbol{z};\mathfrak{s}) \ge \log N - \mathcal{L}_{\mathrm{NCE}_\mathfrak{s}}$ follows directly from the InfoNCE inequality. $\blacksquare$
 
 ---
 
-# Appendix I: Proof of Theorem 1
+## Appendix II: Proof of the Lipschitz Inequality
 
-According to the InfoNCE bound, the mutual information between $\boldsymbol{z}$ and the semantic factor $\mathfrak{s}_i$ satisfies
+Let $\{s_i^+\}_{i=1}^N$ and $\{\mathfrak{s}_i^+\}_{i=1}^N$ be two sets of anchor vectors from different semantic Hilbert spaces, with corresponding positive and negative samples $\{{\boldsymbol x}_k\}_{k=0}^m$. 
 
-$$
-I(\boldsymbol{z};\mathfrak{s}_i)
-\ge
-\log N
--
-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}_i}}.
-$$
+Assume all vectors have norms bounded away from zero:
+$$\|s_i^+\|, \|\mathfrak{s}_i^+\|, \|{\boldsymbol x}_k\| \ge c > 0, \quad \forall i,k$$
 
-By the chain rule of mutual information,
+Let $\tau > 0$ be the temperature parameter. The NCE loss for anchor $s_i^+$ is defined as:
+$$\mathcal{L}_{\mathrm{NCE}}(s_i^+) = -\frac{\operatorname{sim}(s_i^+,{\boldsymbol x}_{k'})}{\tau} + \log\left(\sum_{k=0}^{m} \exp\left(\frac{\operatorname{sim}(s_i^+,{\boldsymbol x}_k)}{\tau}\right)\right)$$
 
-$$
-I(\boldsymbol{z};(\mathfrak{s}_i,\mathfrak{g}))
-=
-I(\boldsymbol{z};\mathfrak{s}_i)
-+
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}_i).
-$$
+where $\operatorname{sim}(s_i^+,{\boldsymbol x}) = \frac{s_i^+ \cdot {\boldsymbol x}}{\|s_i^+\|\|{\boldsymbol x}\|}$ is the cosine similarity, and ${\boldsymbol x}_{k'}$ is the positive sample for $s_i^+$.
 
-Assuming that the input is generated by the semantic and detail factors, i.e.,
+### Step-by-Step Derivation
 
-$$
-\boldsymbol{X}=(\mathfrak{s}_i,\mathfrak{g}),
-$$
+1. **Cosine Similarity Lipschitz Continuity:**  
+   Based on the Cauchy–Schwarz inequality and norm properties, there exists a constant $C > 0$ such that:
+   $$|\operatorname{sim}(s_i^+,{\boldsymbol x}_k) - \operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_k)| \le C \| s_i^+ - \mathfrak{s}_i^+ \|_2, \quad \forall i,k$$
 
-we have
+2. **Bounding Loss Difference:**  
+   The difference in NCE loss between anchor representations $s_i^+$ and $\mathfrak{s}_i^+$ is bounded by:
+   $$\big|\mathcal{L}_{\mathrm{NCE}}(s_i^+) - \mathcal{L}_{\mathrm{NCE}}(\mathfrak{s}_i^+)\big| \le \frac{|\operatorname{sim}(s_i^+,{\boldsymbol x}_0) - \operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_0)|}{\tau} + \left| \log \sum_{k=0}^m e^{\operatorname{sim}(s_i^+,{\boldsymbol x}_k)/\tau} - \log \sum_{k=0}^m e^{\operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_k)/\tau} \right|$$
 
-$$
-I(\boldsymbol{z};\boldsymbol{X})
-=
-I(\boldsymbol{z};\mathfrak{s}_i)
-+
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}_i).
-$$
+3. **Log-Sum-Exp Lipschitz Property:**  
+   Applying the mean value theorem / Lipschitz property to the $\log\sum\exp$ term:
+   $$\left| \log \sum_{k=0}^m e^{\operatorname{sim}(s_i^+,{\boldsymbol x}_k)/\tau} - \log \sum_{k=0}^m e^{\operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_k)/\tau} \right| \le \frac{\sum_{k=0}^m \big| e^{\operatorname{sim}(s_i^+,{\boldsymbol x}_k)/\tau} - e^{\operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_k)/\tau} \big|}{\min(S_{s_i^+}, S_{\mathfrak{s}_i^+})}$$
 
-Since mutual information is upper bounded by entropy,
+   where:
+   $$S_{s_i^+} = \sum_{k=0}^m e^{\operatorname{sim}(s_i^+,{\boldsymbol x}_k)/\tau}, \quad S_{\mathfrak{s}_i^+} = \sum_{k=0}^m e^{\operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_k)/\tau}$$
 
-$$
-I(\boldsymbol{z};\boldsymbol{X})
-\le
-H(\boldsymbol{z}),
-$$
+4. **Exponential Bounding:**  
+   Applying the Lagrange Mean Value Theorem to the exponential terms yields:
+   $$\big| e^{\operatorname{sim}(s_i^+,{\boldsymbol x}_k)/\tau} - e^{\operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_k)/\tau} \big| \le \frac{C}{\tau} e^{1/\tau} \| s_i^+ - \mathfrak{s}_i^+ \|_2$$
 
-we obtain
+5. **Single Anchor Lipschitz Constant:**  
+   Combining the bounds gives the inequality for the $i$-th anchor:
+   $$\big|\mathcal{L}_{\mathrm{NCE}}(s_i^+) - \mathcal{L}_{\mathrm{NCE}}(\mathfrak{s}_i^+)\big| \le K \| s_i^+ - \mathfrak{s}_i^+ \|_2$$
 
-$$
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}_i)
-\le
-H(\boldsymbol{z})
--
-I(\boldsymbol{z};\mathfrak{s}_i).
-$$
+   where:
+   $$K = \frac{C}{\tau} \left( 1 + e^{2/\tau} \right)$$
 
-Substituting the InfoNCE lower bound gives
+6. **Global Bounds Aggregation:**  
+   Aggregating across all anchors $i = 1, \dots, N$:
+   $$\big\| \mathcal{L}_{\mathrm{NCE}_s} - \mathcal{L}_{\mathrm{NCE}_\mathfrak{s}} \big\|_2 \le K \big\| s^+ - \mathbf{\mathfrak{s}}^+ \big\|_2$$
 
-$$
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}_i)
-\le
-H(\boldsymbol{z})
--
-\log N
-+
-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}_i}}.
-$$
-
-Because $\|\boldsymbol{z}\|_2=1$, the representation lies on the unit hypersphere
-
-$$
-\mathbb{S}^{d-1}
-=
-\left\{
-\boldsymbol{z}\in\mathbb{R}^{d}
-:
-\|\boldsymbol{z}\|_2=1
-\right\}.
-$$
-
-The surface area of this hypersphere is
-
-$$
-\operatorname{Area}(\mathbb{S}^{d-1})
-=
-\frac{2\pi^{d/2}}
-{\Gamma(d/2)}.
-$$
-
-Therefore, the differential entropy of $\boldsymbol{z}$ is bounded by
-
-$$
-H(\boldsymbol{z})
-\le
-\log
-\frac{2\pi^{d/2}}
-{\Gamma(d/2)}
-=
-C.
-$$
-
-Hence,
-
-$$
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s}_i)
-\le
-C-\log N
-+
-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}_i}}.
-$$
-
-Since this inequality holds for all $i=1,\ldots,N$, averaging over the semantic samples yields
-
-$$
-I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s})
-\le
-C-\log N
-+
-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}.
-$$
-
-Meanwhile, the semantic mutual information directly satisfies the InfoNCE lower bound
-
-$$
-I(\boldsymbol{z};\mathfrak{s})
-\ge
-\log N
--
-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}.
-$$
-
-Therefore, minimizing $\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}$ simultaneously increases the lower bound on semantic information and decreases the upper bound on detail information.
-
-Thus, the theorem follows.
-
----
-
-# Appendix II: Proof of the Lipschitz Inequality
-
-Let
-
-$$
-\{s_i^+\}_{i=1}^{N}
-$$
-
-and
-
-$$
-\{\mathfrak{s}_i^+\}_{i=1}^{N}
-$$
-
-be two sets of anchor vectors from different semantic representation spaces, with corresponding positive and negative samples
-
-$$
-\{\boldsymbol{x}_k\}_{k=0}^{m}.
-$$
-
-Assume that all vectors have norms bounded away from zero:
-
-$$
-\|s_i^+\|_2
-\ge c,
-\qquad
-\|\mathfrak{s}_i^+\|_2
-\ge c,
-\qquad
-\|\boldsymbol{x}_k\|_2
-\ge c,
-$$
-
-for some constant $c>0$ and for all $i,k$.
-
-Let $\tau>0$ denote the temperature parameter. The NCE loss for the anchor $s_i^+$ is defined as
-
-$$
-\mathcal{L}_{\mathrm{NCE}}(s_i^+)
-=
--
-\frac{
-\operatorname{sim}(s_i^+,\boldsymbol{x}_{k'})
-}{\tau}
-+
-\log
-\left(
-\sum_{k=0}^{m}
-\exp
-\left(
-\frac{
-\operatorname{sim}(s_i^+,\boldsymbol{x}_k)
-}{\tau}
-\right)
-\right),
-$$
-
-where $\boldsymbol{x}_{k'}$ is the positive sample associated with $s_i^+$, and the cosine similarity is
-
-$$
-\operatorname{sim}(s_i^+,\boldsymbol{x})
-=
-\frac{
-s_i^+\cdot\boldsymbol{x}
-}{
-\|s_i^+\|_2\|\boldsymbol{x}\|_2
-}.
-$$
-
-Because cosine similarity is Lipschitz continuous on vectors whose norms are bounded away from zero, there exists a constant $C>0$ such that
-
-$$
-\left|
-\operatorname{sim}(s_i^+,\boldsymbol{x}_k)
--
-\operatorname{sim}(\mathfrak{s}_i^+,\boldsymbol{x}_k)
-\right|
-\le
-C
-\|s_i^+-\mathfrak{s}_i^+\|_2,
-$$
-
-for all $i,k$.
-
-The difference between the two NCE losses can therefore be bounded as
-
-$$
-\begin{aligned}
-&
-\left|
-\mathcal{L}_{\mathrm{NCE}}(s_i^+)
--
-\mathcal{L}_{\mathrm{NCE}}(\mathfrak{s}_i^+)
-\right|
-\\
-&\le
-\frac{
-\left|
-\operatorname{sim}(s_i^+,\boldsymbol{x}_{k'})
--
-\operatorname{sim}(\mathfrak{s}_i^+,\boldsymbol{x}_{k'})
-\right|
-}{\tau}
-\\
-&\quad+
-\left|
-\log
-\sum_{k=0}^{m}
-\exp
-\left(
-\frac{
-\operatorname{sim}(s_i^+,\boldsymbol{x}_k)
-}{\tau}
-\right)
--
-\log
-\sum_{k=0}^{m}
-\exp
-\left(
-\frac{
-\operatorname{sim}(\mathfrak{s}_i^+,\boldsymbol{x}_k)
-}{\tau}
-\right)
-\right|.
-\end{aligned}
-$$
-
-Define
-
-$$
-S_{s_i^+}
-=
-\sum_{k=0}^{m}
-\exp
-\left(
-\frac{
-\operatorname{sim}(s_i^+,\boldsymbol{x}_k)
-}{\tau}
-\right)
-$$
-
-and
-
-$$
-S_{\mathfrak{s}_i^+}
-=
-\sum_{k=0}^{m}
-\exp
-\left(
-\frac{
-\operatorname{sim}(\mathfrak{s}_i^+,\boldsymbol{x}_k)
-}{\tau}
-\right).
-$$
-
-Using the Lipschitz property of the logarithm and the fact that the log-sum-exp function is Lipschitz continuous, we obtain
-
-$$
-\begin{aligned}
-&
-\left|
-\log S_{s_i^+}
--
-\log S_{\mathfrak{s}_i^+}
-\right|
-\\
-&\le
-\frac{
-\displaystyle
-\sum_{k=0}^{m}
-\left|
-\exp
-\left(
-\frac{
-\operatorname{sim}(s_i^+,\boldsymbol{x}_k)
-}{\tau}
-\right)
--
-\exp
-\left(
-\frac{
-\operatorname{sim}(\mathfrak{s}_i^+,\boldsymbol{x}_k)
-}{\tau}
-\right)
-\right|
-}{
-\min
-\left(
-S_{s_i^+},
-S_{\mathfrak{s}_i^+}
-\right)
-}.
-\end{aligned}
-$$
-
-Since cosine similarity satisfies
-
-$$
--1
-\le
-\operatorname{sim}(\cdot,\cdot)
-\le
-1,
-$$
-
-the mean value theorem applied to the exponential function gives
-
-$$
-\begin{aligned}
-&
-\left|
-\exp
-\left(
-\frac{
-\operatorname{sim}(s_i^+,\boldsymbol{x}_k)
-}{\tau}
-\right)
--
-\exp
-\left(
-\frac{
-\operatorname{sim}(\mathfrak{s}_i^+,\boldsymbol{x}_k)
-}{\tau}
-\right)
-\right|
-\\
-&\le
-\frac{C}{\tau}
-e^{1/\tau}
-\|s_i^+-\mathfrak{s}_i^+\|_2.
-\end{aligned}
-$$
-
-Combining the above inequalities yields
-
-$$
-\left|
-\mathcal{L}_{\mathrm{NCE}}(s_i^+)
--
-\mathcal{L}_{\mathrm{NCE}}(\mathfrak{s}_i^+)
-\right|
-\le
-K
-\|s_i^+-\mathfrak{s}_i^+\|_2,
-$$
-
-where $K>0$ is a constant depending on the temperature $\tau$, the number of contrastive samples, and the Lipschitz constant of the cosine similarity.
-
-For example, under the above bounds, one may choose a valid constant of the form
-
-$$
-K
-=
-\frac{C}{\tau}
-\left(
-1+e^{2/\tau}
-\right).
-$$
-
-Finally, aggregating over all anchors $i=1,\ldots,N$, let
-
-$$
-s^+
-=
-[s_1^+,\ldots,s_N^+]
-$$
-
-and
-
-$$
-\mathfrak{s}^+
-=
-[\mathfrak{s}_1^+,\ldots,\mathfrak{s}_N^+].
-$$
-
-Then,
-
-$$
-\left\|
-\mathcal{L}_{\mathrm{NCE}_{s}}
--
-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}
-\right\|_2
-\le
-K
-\left\|
-s^+
--
-\mathfrak{s}^+
-\right\|_2.
-$$
-
-Thus, the NCE objective is locally Lipschitz with respect to the semantic representation. Consequently, when
-
-$$
-\|s-\mathfrak{s}\|_2\le\varepsilon,
-$$
-
-we have
-
-$$
-\left\|
-\mathcal{L}_{\mathrm{NCE}_{s}}
--
-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}
-\right\|_2
-\le
-K\varepsilon.
-$$
-
-This completes the proof.
-
----
-
-## Summary of the Theoretical Result
-
-The above analysis establishes two complementary properties of the semantic contrastive objective:
-
-1. **Semantic enhancement**
-
-   $$
-   I(\boldsymbol{z};\mathfrak{s})
-   \ge
-   \log N
-   -
-   \mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}.
-   $$
-
-   Therefore, minimizing the semantic InfoNCE loss increases the lower bound of the semantic information retained by $\boldsymbol{z}$.
-
-2. **Detail suppression**
-
-   $$
-   I(\boldsymbol{z};\mathfrak{g}\mid\mathfrak{s})
-   \le
-   C-\log N
-   +
-   \mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}.
-   $$
-
-   Hence, minimizing the same objective tightens the upper bound on the residual detail information encoded in $\boldsymbol{z}$.
-
-3. **Robustness to imperfect semantic representations**
-
-   If the learned semantic representation $s$ approximates the ideal semantic factor $\mathfrak{s}$ with error $\varepsilon$, then
-
-   $$
-   \left\|
-   \mathcal{L}_{\mathrm{NCE}_{s}}
-   -
-   \mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}}}
-   \right\|_2
-   \le
-   K\varepsilon.
-   $$
-
-   Therefore, the theoretical guarantee degrades continuously with the semantic approximation error.
-
-Overall, the theory supports the interpretation that the proposed semantic contrastive learning mechanism encourages $\boldsymbol{z}$ to **retain turbine-operational semantics while suppressing irrelevant sensor-level details and noise**.
+   where $s^+ = [s_1^+,\dots,s_N^+]$ and $\mathbf{\mathfrak{s}}^+ = [\mathfrak{s}_1^+,\dots,\mathfrak{s}_N^+]$. $\blacksquare$
