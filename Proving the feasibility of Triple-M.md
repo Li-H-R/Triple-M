@@ -8,7 +8,7 @@ Let the input $\boldsymbol{X}$ contain two underlying generative factors:
 Let the encoder produce a normalized latent representation $\boldsymbol{z}$. The semantic mutual information is defined as
 
 
-I(\boldsymbol{z}; \mathfrak{s})
+$$I(\boldsymbol{z}; \mathfrak{s})$$
 ===============================
 $$
 \mathbb{E}_{p(\boldsymbol{z},\mathfrak{s})}
