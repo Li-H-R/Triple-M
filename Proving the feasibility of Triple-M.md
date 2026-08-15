@@ -68,9 +68,11 @@ $$I(\boldsymbol{z};\mathfrak{g}\mid \mathfrak{s}) \le C - \log N + \mathcal{L}_{
 
 1. **InfoNCE Bound:** According to the InfoNCE mutual information lower bound, we have:
 
-$$	I(\boldsymbol {z};\mathfrak {s_{i}}) \ge
-		\log {N}-\mathcal {L}_{\mathrm{NCE}_{{\mathfrak {s}}_{i}}}
-		$$
+$$
+I(\boldsymbol{z};\mathfrak{s}_{i})
+\ge
+\log N-\mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}_{i}}}.
+$$
 
 2. **Chain Rule Decomposition:**
    $$I(\boldsymbol{z}; (\mathfrak{s_i},\mathfrak{g})) = I(\boldsymbol{z}; \boldsymbol{X}) = I(\boldsymbol{z}; \mathfrak{s_i}) + I(\boldsymbol{z}; \mathfrak{g}\mid \mathfrak{s_i})$$
