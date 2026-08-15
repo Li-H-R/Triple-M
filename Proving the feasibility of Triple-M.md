@@ -74,7 +74,6 @@ $$I(\boldsymbol{z};\mathfrak{g}\mid \mathfrak{s}) \le C - \log N + \mathcal{L}_{
 Combining these steps proves the bound for all anchors $i = 1, \dots, N$:
 
 $$I(\boldsymbol{z}; \mathfrak{g} \mid \mathfrak{s}) \le C - \log N + \mathcal{L}_{\mathrm{NCE}_\mathfrak{s}} \quad \blacksquare$$
-
 ---
 
 ## Appendix II: Proof of the Lipschitz Inequality
