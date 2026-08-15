@@ -55,40 +55,40 @@ $$I(\boldsymbol{z};\mathfrak{g}\mid \mathfrak{s}) \le C - \log N + \mathcal{L}_{
 
 ---
 
-## 3. Supplementary Proofs
+# 3. Supplementary Proofs
 
-### Appendix I: Proof of Theorem 1
+## Appendix I: Proof of Theorem 1
 
 1. **InfoNCE Lower Bound:** By definition of the InfoNCE lower bound:
-   $$I(\boldsymbol z;\mathfrak s_{i}) \ge \log N - \mathcal L_{\mathrm{NCE}_{{\mathfrak s}_{i}}}$$
+   $$I(\boldsymbol{z}; \mathfrak{s}_i) \ge \log N - \mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}_i}}$$
 
 2. **Chain Rule Decomposition:**
-   $$I(\boldsymbol{z}; (\mathfrak{s_i},\mathfrak{g})) = I(\boldsymbol{z}; \boldsymbol{X}) = I(\boldsymbol{z}; \mathfrak{s_i}) + I(\boldsymbol{z}; \mathfrak{g}\mid \mathfrak{s_i})$$
+   $$I(\boldsymbol{z}; (\mathfrak{s}_i, \mathfrak{g})) = I(\boldsymbol{z}; \boldsymbol{X}) = I(\boldsymbol{z}; \mathfrak{s}_i) + I(\boldsymbol{z}; \mathfrak{g} \mid \mathfrak{s}_i)$$
 
-3. **Entropy Bound:** Since $I(\boldsymbol z;\boldsymbol X) \le H(\boldsymbol z)$, we have:
-   $$I(\boldsymbol z;\mathfrak g \mid \mathfrak s_i) \le H(\boldsymbol z) - I(\boldsymbol z;\mathfrak s_i) \le H(\boldsymbol z) - \log N + \mathcal L_{\mathrm{NCE}_{\mathfrak s_i}}$$
+3. **Entropy Bound:** Since $I(\boldsymbol{z}; \boldsymbol{X}) \le H(\boldsymbol{z})$, we have:
+   $$I(\boldsymbol{z}; \mathfrak{g} \mid \mathfrak{s}_i) \le H(\boldsymbol{z}) - I(\boldsymbol{z}; \mathfrak{s}_i) \le H(\boldsymbol{z}) - \log N + \mathcal{L}_{\mathrm{NCE}_{\mathfrak{s}_i}}$$
 
-4. **Hypersphere Maximum Entropy:** Because $\|\boldsymbol z\|_2 = 1$, $\boldsymbol z$ lies on the unit sphere in $\mathbb{R}^d$, bounding its differential entropy by $C$:
-   $$H(\boldsymbol z) \le \log\frac{2\pi^{d/2}}{\Gamma(d/2)} = C$$
+4. **Hypersphere Maximum Entropy:** Because $\|\boldsymbol{z}\|_2 = 1$, $\boldsymbol{z}$ lies on the unit sphere in $\mathbb{R}^d$, bounding its differential entropy by $C$:
+   $$H(\boldsymbol{z}) \le \log \frac{2\pi^{d/2}}{\Gamma(d/2)} = C$$
 
-Combining these steps proves the bound for all anchors $i=1,\dots,N$:
+Combining these steps proves the bound for all anchors $i = 1, \dots, N$:
 
-$$I(\boldsymbol{z};\mathfrak{g}\mid \mathfrak{s}) \le C - \log N + \mathcal{L}_{\mathrm{NCE}_\mathfrak{s}} \quad \blacksquare$$
+$$I(\boldsymbol{z}; \mathfrak{g} \mid \mathfrak{s}) \le C - \log N + \mathcal{L}_{\mathrm{NCE}_\mathfrak{s}} \quad \blacksquare$$
 
 ---
 
-### Appendix II: Proof of the Lipschitz Inequality
+## Appendix II: Proof of the Lipschitz Inequality
 
-Let $\{s_i^+\}_{i=1}^N$ and $\{\mathfrak{s}_i^+\}_{i=1}^N$ be anchor sets with bounded norms $\|s_i^+\|, \|\mathfrak{s}_i^+\|, \|{\boldsymbol x}_k\| \ge c > 0$.
+Let $\{s_i^+\}_{i=1}^N$ and $\{\mathfrak{s}_i^+\}_{i=1}^N$ be anchor sets with bounded norms $\|s_i^+\|, \|\mathfrak{s}_i^+\|, \|\boldsymbol{x}_k\| \ge c > 0$.
 
 1. **Cosine Similarity Lipschitz Continuity:** By Cauchy–Schwarz, there exists $C > 0$ such that:
-   $$|\operatorname{sim}(s_i^+,{\boldsymbol x}_k) - \operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_k)| \le C \| s_i^+ - \mathfrak{s}_i^+ \|_2$$
+   $$|\mathrm{sim}(s_i^+, \boldsymbol{x}_k) - \mathrm{sim}(\mathfrak{s}_i^+, \boldsymbol{x}_k)| \le C \| s_i^+ - \mathfrak{s}_i^+ \|_2$$
 
 2. **Log-Sum-Exp Bound:** Using the Lipschitz property of the $\log\sum\exp$ function:
-   $$\left| \mathcal{L}_{\mathrm{NCE}}(s_i^+) - \mathcal{L}_{\mathrm{NCE}}(\mathfrak{s}_i^+) \right| \le \frac{|\Delta \operatorname{sim}_0|}{\tau} + \frac{\sum_{k=0}^m \left| e^{\operatorname{sim}(s_i^+,{\boldsymbol x}_k)/\tau} - e^{\operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_k)/\tau} \right|}{\min(S_{s_i^+}, S_{\mathfrak{s}_i^+})}$$
+   $$\left| \mathcal{L}_{\mathrm{NCE}}(s_i^+) - \mathcal{L}_{\mathrm{NCE}}(\mathfrak{s}_i^+) \right| \le \frac{|\Delta \mathrm{sim}_0|}{\tau} + \frac{\sum_{k=0}^m \left| e^{\mathrm{sim}(s_i^+, \boldsymbol{x}_k)/\tau} - e^{\mathrm{sim}(\mathfrak{s}_i^+, \boldsymbol{x}_k)/\tau} \right|}{\min(S_{s_i^+}, S_{\mathfrak{s}_i^+})}$$
 
 3. **Applying Mean Value Theorem:**
-   $$\left| e^{\operatorname{sim}(s_i^+,{\boldsymbol x}_k)/\tau} - e^{\operatorname{sim}(\mathfrak{s}_i^+,{\boldsymbol x}_k)/\tau} \right| \le \frac{C}{\tau} e^{1/\tau} \| s_i^+ - \mathfrak{s}_i^+ \|_2$$
+   $$\left| e^{\mathrm{sim}(s_i^+, \boldsymbol{x}_k)/\tau} - e^{\mathrm{sim}(\mathfrak{s}_i^+, \boldsymbol{x}_k)/\tau} \right| \le \frac{C}{\tau} e^{1/\tau} \| s_i^+ - \mathfrak{s}_i^+ \|_2$$
 
 4. **Final Bound Aggregation:** Combining terms yields the constant $K = \frac{C}{\tau} \left( 1 + e^{2/\tau} \right)$, giving the final aggregated inequality:
 
