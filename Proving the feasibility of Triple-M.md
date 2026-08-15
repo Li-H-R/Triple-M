@@ -67,10 +67,10 @@ $$
 
 where
 
-$$
-\mathcal{L}*{\mathrm{NCE}*{\mathfrak{s}}}
-=========================================
 
+$$\mathcal{L}*{\mathrm{NCE}*{\mathfrak{s}}}$$
+=========================================
+$$
 -\mathbb{E}*i
 \left[
 \log
